@@ -1,18 +1,36 @@
 import React, { useState } from "react";
 
+const OMDB_API_KEY = "1e64f7eb"; // Replace with your OMDb API key
+
 function App() {
   const [query, setQuery] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
+  const [embedUrl, setEmbedUrl] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
 
-    // Example: Generate SFlix URL (this depends on how SFlix structures URLs)
-    const sflixUrl = `https://sflix.to/search/${encodeURIComponent(query)}`;
+    try {
+      setError("");
+      // Fetch IMDb ID from OMDb API
+      const response = await fetch(
+        `https://www.omdbapi.com/?t=${encodeURIComponent(query)}&apikey=${OMDB_API_KEY}`
+      );
+      const data = await response.json();
 
-    // For now, just open the search results
-    setVideoUrl(sflixUrl);
+      if (data.Response === "False") {
+        setError("Movie not found!");
+        return;
+      }
+
+      const imdbId = data.imdbID; // Get IMDb ID
+      const vidSrcEmbedUrl = `https://vidsrc.xyz/embed/movie?imdb=${imdbId}`;
+
+      setEmbedUrl(vidSrcEmbedUrl);
+    } catch (err) {
+      setError("Failed to fetch movie data.");
+    }
   };
 
   return (
@@ -25,15 +43,21 @@ function App() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button type="submit">Find Movie</button>
+        <button type="submit">Play</button>
       </form>
 
-      {videoUrl && (
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {embedUrl && (
         <div>
-          <h2>Watch Here:</h2>
-          <a href={videoUrl} target="_blank" rel="noopener noreferrer">
-            Open Movie in SFlix
-          </a>
+          <h2>Now Playing</h2>
+          <iframe
+            src={embedUrl}
+            width="800"
+            height="450"
+            allowFullScreen
+            title="Movie Player"
+          ></iframe>
         </div>
       )}
     </div>
